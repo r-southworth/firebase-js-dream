@@ -16,7 +16,7 @@ import { HfInference } from '@huggingface/inference';
 
 const API_TOKEN = process.env.HUGGINGFACE
 
-const inference = new HfInference(API_TOKEN)
+// const inference = new HfInference(API_TOKEN)
 
 
 import express from 'express';
@@ -29,13 +29,26 @@ app.use(express.json());
 app.post('/dream', async (req, res) => {
     const prompt = req.body.prompt;
 
-    const aiResponse = await inference.textToImage({
-        model: 'stabilityai/stable-diffusion-2-1',
-        inputs: prompt
+    const inputData = {
+        inputs: prompt,
+    }
+
+    const aiResponse = await fetch(
+        "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1",
+        {
+            headers: { 
+                Authorization: `Bearer ${API_TOKEN}`,
+         },
+			method: "POST",
+			body: JSON.stringify(inputData),
     });
 
-    const image = URL.createObjectURL(aiResponse);
-    res.send({image});
+    const mimeType = 'image/png'
+    const result = await aiResponse.arrayBuffer();
+    const base64data = Buffer.from(result).toString('base64')
+    const img = `data:${mimeType};base64,` + base64data
+
+    res.send({img});
 });
 
 app.listen(8080, () => console.log('make art on http://localhost:8080/dream'));
